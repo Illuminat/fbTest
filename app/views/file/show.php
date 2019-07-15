@@ -55,8 +55,8 @@
         foreach ($data as $file) {
             ?>
             <tr id="row_<?=$file['id']?>">
-                <td><i class="fa fa-close" onclick="removeFile('<?=$file['id']?>','<?=$file['image']?>')"></i></td>
-                <td class="tooltip" onclick="openImage('<?=$file['image']?>')"><?=$file['image']?>
+                <td><i class="fa fa-close" onclick="removeFile('<?=$file['id']?>','<?=$file['name']?>')"></i></td>
+                <td class="tooltip" onclick="openImage('<?=$file['image']?>')"><?=$file['name']?>
                     <span class="tooltiptext"><?=$file['description']?></span>
                 </td>
             </tr>

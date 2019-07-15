@@ -28,16 +28,18 @@ class FileController extends Controller
         header("Content-Type: application/json");
         try {
             $files = $this->validateFiles();
+            $texts = $this->validateText();
             $files = $this->uploadFiles($files);
-            $description = $this->validateDescription();
+
 
             $db = DB::getInstance()->getConnection();
-            $stmt = $db->prepare("INSERT INTO images (`image`, `description`) VALUES (:image, :description)");
+            $stmt = $db->prepare("INSERT INTO images (`name`, `image`, `description`) VALUES (:name, :image, :description)");
 
             foreach ($files as $key => $fileName) {
                 $data = [
+                    'name' => $texts['names'][$key],
                     'image' => $fileName,
-                    'description' => ($description[$key] !== "") ? $description[$key] : 'some image'
+                    'description' => ($texts['descriptions'][$key] !== "") ? $texts['descriptions'][$key] : 'some image'
                 ];
                 $stmt->execute($data);
             }
@@ -109,15 +111,35 @@ class FileController extends Controller
         return $uploaded;
     }
 
-    private function validateDescription()
+    private function validateText()
     {
-        $result = [];
+        $result = [
+            'names' => [],
+            'descriptions' => []
+        ];
+
+        if (empty($_POST['names']) || !is_array($_POST['names'])) {
+            throw new \Exception('Not putted names');
+        }
+
+        foreach ($_POST['names'] as $name) {
+            if (empty($name)) {
+                throw new \Exception('Name cant be empty');
+            }
+
+            if (preg_match("/^[a-zA-Z0-9]+$/", $name) !== 1) {
+                throw new \Exception('Name can contain only letters');
+            }
+            $result['names'][] = htmlspecialchars($name);
+        }
+
+
         if (empty($_POST['description'])) {
             return $result;
         }
 
         foreach ($_POST['description'] as $description) {
-            $result[] = substr(trim(htmlspecialchars($description)), 0, 60);
+            $result['descriptions'][] = substr(trim(htmlspecialchars($description)), 0, 60);
         }
 
         return $result;
@@ -127,7 +149,7 @@ class FileController extends Controller
     public function showFiles()
     {
         $db = DB::getInstance()->getConnection();
-        $data = $db->query("SELECT id, description, image FROM images ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $data = $db->query("SELECT id, description, image, `name` FROM images ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
         $this->view->render('/file/show.php', $data);
     }
 
@@ -141,7 +163,7 @@ class FileController extends Controller
                 throw new \Exception('Id not set');
             }
             $db = DB::getInstance()->getConnection();
-            $fileData = $db->query("SELECT id, description, image FROM images Where id = " . (int) $_POST['fileId'])->fetch();
+            $fileData = $db->query("SELECT id, image FROM images Where id = " . (int) $_POST['fileId'])->fetch();
             if (empty($fileData)) {
                 throw new \Exception('File not Found');
             }
